@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>かきじゅんれんしゅう</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <button class="icon-button hidden" id="backButton" type="button" aria-label="もどる">←</button>
+        <div>
+          <p class="app-subtitle">小学2年生</p>
+          <h1 id="screenTitle">かきじゅん</h1>
+        </div>
+      </header>
+
+      <main>
+        <section class="screen active" id="homeScreen" aria-labelledby="screenTitle">
+          <div class="home-kanji" id="homeKanji">字</div>
+          <div class="home-actions">
+            <button class="big-button primary" type="button" data-action="today">今日の漢字</button>
+            <button class="big-button" type="button" data-action="list">漢字一覧</button>
+            <button class="big-button" type="button" data-action="weak">苦手な漢字</button>
+            <button class="big-button" type="button" data-action="history">学習履歴</button>
+          </div>
+        </section>
+
+        <section class="screen" id="listScreen">
+          <div class="kanji-grid" id="kanjiGrid"></div>
+        </section>
+
+        <section class="screen" id="weakScreen">
+          <div class="kanji-grid" id="weakGrid"></div>
+          <p class="empty-text hidden" id="weakEmpty">まだ苦手な漢字はありません。</p>
+        </section>
+
+        <section class="screen" id="historyScreen">
+          <div class="history-list" id="historyList"></div>
+          <p class="empty-text hidden" id="historyEmpty">まだ学習履歴はありません。</p>
+        </section>
+
+        <section class="screen" id="detailScreen">
+          <article class="detail">
+            <div class="detail-kanji" id="detailKanji"></div>
+            <div class="reading-box">
+              <p><span>音読み</span><strong id="detailOnyomi"></strong></p>
+              <p><span>訓読み</span><strong id="detailKunyomi"></strong></p>
+            </div>
+
+            <div class="info-block">
+              <h2>ことば</h2>
+              <div class="word-list" id="detailWords"></div>
+            </div>
+
+            <div class="info-block">
+              <h2>れいぶん</h2>
+              <p class="sentence" id="detailSentence"></p>
+            </div>
+
+            <div class="stroke-area">
+              <div class="stroke-header">
+                <h2>書き順</h2>
+                <p id="strokeStatus">ボタンをおしてね</p>
+              </div>
+              <svg id="strokeSvg" viewBox="0 0 109 109" role="img" aria-label="書き順アニメーション"></svg>
+              <p class="stroke-credit">書き順データ: KanjiVG</p>
+            </div>
+
+            <div class="detail-actions">
+              <button class="big-button primary" type="button" data-action="play-strokes">書き順を見る</button>
+              <button class="big-button" type="button" data-action="replay-strokes">もう一度</button>
+              <button class="big-button success" type="button" data-action="practice">自分で書く</button>
+              <button class="big-button success" type="button" data-action="learned">自分で書けた</button>
+              <button class="big-button danger" type="button" data-action="toggle-weak" id="weakToggleButton">苦手に追加</button>
+            </div>
+          </article>
+        </section>
+
+        <section class="screen" id="practiceScreen">
+          <div class="practice-wrap">
+            <div class="practice-guide" id="practiceGuide">字</div>
+            <canvas id="practiceCanvas" width="320" height="320" aria-label="なぞり練習"></canvas>
+          </div>
+          <div class="detail-actions">
+            <button class="big-button danger" type="button" data-action="clear-canvas">消す</button>
+            <button class="big-button success" type="button" data-action="practice-done">できた</button>
+            <button class="big-button" type="button" data-action="back-detail">戻る</button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <a href="https://kanjivg.tagaini.net/" target="_blank" rel="noopener noreferrer">漢字書き順データ：KanjiVG / CC BY-SA 3.0</a>
+      </footer>
+    </div>
+
+    <script src="kanji-data.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
