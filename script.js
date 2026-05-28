@@ -92,7 +92,7 @@ function readingText(value) {
 function cardReadingText(item) {
   const readings = [];
   if (hasItems(item.onyomi)) readings.push(item.onyomi[0]);
-  if (hasItems(item.kunyomi)) readings.push(item.kunyomi[0].replace(/-/g, ""));
+  if (hasItems(item.kunyomi)) readings.push(item.kunyomi[0]);
   return readings.length > 0 ? readings.join(" / ") : PENDING_TEXT;
 }
 
