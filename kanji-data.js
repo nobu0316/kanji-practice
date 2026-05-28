@@ -1,6 +1,48 @@
 const GRADE2_KANJI = "引 羽 雲 園 遠 何 科 夏 家 歌 画 回 会 海 絵 外 角 楽 活 間 丸 岩 顔 汽 記 帰 弓 牛 魚 京 強 教 近 兄 形 計 元 言 原 戸 古 午 後 語 工 公 広 交 光 考 行 高 黄 合 谷 国 黒 今 才 細 作 算 止 市 矢 姉 思 紙 寺 自 時 室 社 弱 首 秋 週 春 書 少 場 色 食 心 新 親 図 数 西 声 星 晴 切 雪 船 線 前 組 走 多 太 体 台 地 池 知 茶 昼 長 鳥 朝 直 通 弟 店 点 電 刀 冬 当 東 答 頭 同 道 読 内 南 肉 馬 売 買 麦 半 番 父 風 分 聞 米 歩 母 方 北 毎 妹 万 明 鳴 毛 門 夜 野 友 用 曜 来 里 理 話".split(" ");
 
 const KANJI_OVERRIDES = {
+  引: {
+    onyomi: ["イン"],
+    kunyomi: ["ひ-く"],
+    words: ["引く", "引き出し", "引力"],
+    exampleSentence: "ドアを引く。"
+  },
+  羽: {
+    onyomi: ["ウ"],
+    kunyomi: ["は", "はね"],
+    words: ["羽", "羽根", "羽毛"],
+    exampleSentence: "鳥の羽を見る。"
+  },
+  雲: {
+    onyomi: ["ウン"],
+    kunyomi: ["くも"],
+    words: ["雲", "白雲", "雨雲"],
+    exampleSentence: "空に白い雲がある。"
+  },
+  園: {
+    onyomi: ["エン"],
+    kunyomi: [],
+    words: ["園", "公園", "学園"],
+    exampleSentence: "公園で遊ぶ。"
+  },
+  遠: {
+    onyomi: ["エン"],
+    kunyomi: ["とお-い"],
+    words: ["遠い", "遠足", "遠方"],
+    exampleSentence: "学校までは遠い。"
+  },
+  何: {
+    onyomi: ["カ"],
+    kunyomi: ["なに", "なん"],
+    words: ["何", "何人", "何日"],
+    exampleSentence: "これは何ですか。"
+  },
+  科: {
+    onyomi: ["カ"],
+    kunyomi: [],
+    words: ["理科", "教科", "科学"],
+    exampleSentence: "理科の時間に実験をする。"
+  },
   春: {
     onyomi: ["シュン"],
     kunyomi: ["はる"],
@@ -41,6 +83,54 @@ const KANJI_OVERRIDES = {
         "M65,73.56c6.55-0.93,14.12-1.62,22.04-2.45c1.14-0.12,2.29-0.24,3.46-0.37"
       ]
     }
+  },
+  家: {
+    onyomi: ["カ", "ケ"],
+    kunyomi: ["いえ", "や"],
+    words: ["家", "家族", "家来"],
+    exampleSentence: "家に帰る。"
+  },
+  歌: {
+    onyomi: ["カ"],
+    kunyomi: ["うた", "うた-う"],
+    words: ["歌", "歌う", "校歌"],
+    exampleSentence: "みんなで歌を歌う。"
+  },
+  会: {
+    onyomi: ["カイ", "エ"],
+    kunyomi: ["あ-う"],
+    words: ["会う", "会社", "会話"],
+    exampleSentence: "友だちに会う。"
+  },
+  海: {
+    onyomi: ["カイ"],
+    kunyomi: ["うみ"],
+    words: ["海", "海外", "海水"],
+    exampleSentence: "夏に海へ行く。"
+  },
+  絵: {
+    onyomi: ["カイ", "エ"],
+    kunyomi: [],
+    words: ["絵", "絵本", "絵画"],
+    exampleSentence: "絵をかく。"
+  },
+  外: {
+    onyomi: ["ガイ", "ゲ"],
+    kunyomi: ["そと", "ほか", "はず-す"],
+    words: ["外", "外国", "外す"],
+    exampleSentence: "外で遊ぶ。"
+  },
+  楽: {
+    onyomi: ["ガク", "ラク"],
+    kunyomi: ["たの-しい", "たの-しむ"],
+    words: ["楽しい", "音楽", "楽器"],
+    exampleSentence: "音楽の時間が楽しい。"
+  },
+  間: {
+    onyomi: ["カン", "ケン"],
+    kunyomi: ["あいだ", "ま"],
+    words: ["間", "時間", "人間"],
+    exampleSentence: "少しの間、待つ。"
   },
   夏: {
     onyomi: ["カ", "ゲ"],
