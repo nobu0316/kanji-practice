@@ -11,6 +11,7 @@ const state = {
 };
 
 const KANJIVG_BASE_URL = "https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/";
+const PENDING_TEXT = "あとで追加";
 const strokeCache = new Map();
 
 const screens = {
@@ -78,6 +79,25 @@ function getProgress(id) {
 
 function getKanji(id) {
   return KANJI_DATA.find((item) => item.id === id) || KANJI_DATA[0];
+}
+
+function hasItems(value) {
+  return Array.isArray(value) && value.length > 0;
+}
+
+function readingText(value) {
+  return hasItems(value) ? value.join(" / ") : PENDING_TEXT;
+}
+
+function cardReadingText(item) {
+  const readings = [];
+  if (hasItems(item.onyomi)) readings.push(item.onyomi[0]);
+  if (hasItems(item.kunyomi)) readings.push(item.kunyomi[0].replace(/-/g, ""));
+  return readings.length > 0 ? readings.join(" / ") : PENDING_TEXT;
+}
+
+function primaryWordText(item) {
+  return hasItems(item.words) ? item.words[0] : PENDING_TEXT;
 }
 
 function todayText() {
@@ -156,7 +176,7 @@ function renderHistory() {
     row.innerHTML = `
       <span class="history-kanji">${item.kanji}</span>
       <span>
-        <p>${item.words[0]}</p>
+        <p>${primaryWordText(item)}</p>
         <p>れんしゅう ${item.progress.learnedCount}回</p>
         <p>さいご: ${item.progress.lastStudiedAt || "まだ"}</p>
       </span>
@@ -176,6 +196,7 @@ function createKanjiCard(item) {
   card.addEventListener("click", () => openDetail(item.id, state.currentScreen));
   card.innerHTML = `
     <span class="card-kanji">${item.kanji}</span>
+    <span class="card-reading">${cardReadingText(item)}</span>
     <span class="card-meta">
       <span>${status}</span>
       <span>${progress.learnedCount}回</span>
@@ -191,15 +212,16 @@ function openDetail(id, fromScreen) {
   state.previousScreen = fromScreen || state.currentScreen;
 
   detailKanji.textContent = item.kanji;
-  detailOnyomi.textContent = item.onyomi;
-  detailKunyomi.textContent = item.kunyomi;
+  detailOnyomi.textContent = readingText(item.onyomi);
+  detailKunyomi.textContent = readingText(item.kunyomi);
   detailWords.innerHTML = "";
-  item.words.forEach((word) => {
+  const words = hasItems(item.words) ? item.words : [PENDING_TEXT];
+  words.forEach((word) => {
     const wordNode = document.createElement("span");
     wordNode.textContent = word;
     detailWords.appendChild(wordNode);
   });
-  detailSentence.textContent = item.exampleSentence;
+  detailSentence.textContent = item.exampleSentence || PENDING_TEXT;
 
   weakToggleButton.textContent = progress.weak ? "苦手から外す" : "苦手に追加";
   weakToggleButton.classList.toggle("active", progress.weak);
