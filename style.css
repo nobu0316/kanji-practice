@@ -187,11 +187,22 @@ h2 {
   text-align: center;
 }
 
+.card-reading {
+  display: block;
+  min-height: 1.4em;
+  margin-top: 8px;
+  color: #3d5968;
+  font-size: 0.98rem;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+}
+
 .card-meta {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 10px;
   color: var(--muted);
   font-size: 0.95rem;
   font-weight: 700;
@@ -247,7 +258,7 @@ h2 {
   gap: 10px;
   align-items: baseline;
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 1.3rem;
 }
 
 .reading-box span {
