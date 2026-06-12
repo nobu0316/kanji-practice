@@ -1,4 +1,5 @@
 const STORAGE_KEY = "kakiJunGrade2Progress";
+const APP_VERSION = "2026-06-13-01";
 
 const state = {
   currentScreen: "home",
@@ -47,6 +48,7 @@ const detailWords = document.querySelector("#detailWords");
 const detailSentence = document.querySelector("#detailSentence");
 const strokeSvg = document.querySelector("#strokeSvg");
 const strokeStatus = document.querySelector("#strokeStatus");
+const strokeLoadInfo = document.querySelector("#strokeLoadInfo");
 const weakToggleButton = document.querySelector("#weakToggleButton");
 const practiceGuide = document.querySelector("#practiceGuide");
 const practiceCanvas = document.querySelector("#practiceCanvas");
@@ -229,16 +231,17 @@ function openDetail(id, fromScreen) {
   showScreen("detail");
 }
 
-async function drawStrokePreview(item) {
+async function drawStrokePreview(item, options = {}) {
   const requestId = ++state.strokeRequestId;
   clearStrokeTimers();
   strokeSvg.innerHTML = "";
   strokeSvg.setAttribute("viewBox", "0 0 109 109");
-  strokeStatus.textContent = "書き順データを読み込み中...";
+  setStrokeLoadingState(item);
 
-  const strokeData = await getStrokeData(item);
+  const strokeData = await getStrokeData(item, options);
   if (requestId !== state.strokeRequestId) return;
   strokeSvg.setAttribute("viewBox", strokeData.viewBox);
+  showStrokeLoadResult(strokeData);
 
   if (strokeData.paths.length === 0) {
     strokeStatus.textContent = "書き順データを読み込めませんでした";
@@ -247,14 +250,21 @@ async function drawStrokePreview(item) {
 
   strokeStatus.textContent = `${strokeData.paths.length}画`;
 
-  strokeData.paths.forEach((stroke, index) => {
+  const paths = strokeData.paths.map((stroke) => {
     const path = makeSvgElement("path", {
       d: stroke,
       class: "stroke-path",
       opacity: "0.18"
     });
     strokeSvg.appendChild(path);
-    drawStrokeNumber(path, index + 1, 0.5);
+    return path;
+  });
+
+  window.requestAnimationFrame(() => {
+    if (requestId !== state.strokeRequestId) return;
+    paths.forEach((path, index) => {
+      drawStrokeNumberSafely(path, index + 1, 0.5, item);
+    });
   });
 }
 
@@ -264,11 +274,12 @@ async function playStrokes() {
   clearStrokeTimers();
   strokeSvg.innerHTML = "";
   strokeSvg.setAttribute("viewBox", "0 0 109 109");
-  strokeStatus.textContent = "書き順データを読み込み中...";
+  setStrokeLoadingState(item);
 
   const strokeData = await getStrokeData(item);
   if (requestId !== state.strokeRequestId) return;
   strokeSvg.setAttribute("viewBox", strokeData.viewBox);
+  showStrokeLoadResult(strokeData);
 
   if (strokeData.paths.length === 0) {
     strokeStatus.textContent = "書き順データを読み込めませんでした";
@@ -284,13 +295,16 @@ async function playStrokes() {
         class: "stroke-path"
       });
       strokeSvg.appendChild(path);
-      animatePath(path);
-      drawStrokeNumber(path, index + 1, 1);
-      strokeStatus.textContent = `${index + 1} / ${strokeData.paths.length}`;
+      window.requestAnimationFrame(() => {
+        if (requestId !== state.strokeRequestId) return;
+        animatePathSafely(path, index, item);
+        drawStrokeNumberSafely(path, index + 1, 1, item);
+        strokeStatus.textContent = `${index + 1} / ${strokeData.paths.length}`;
 
-      if (index === strokeData.paths.length - 1) {
-        strokeStatus.textContent = "できあがり";
-      }
+        if (index === strokeData.paths.length - 1) {
+          strokeStatus.textContent = "できあがり";
+        }
+      });
     }, index * 620);
     state.strokeTimers.push(timer);
   });
@@ -302,37 +316,101 @@ function clearStrokeTimers() {
 }
 
 function getKanjiSvgFileName(kanji) {
-  return kanji.codePointAt(0).toString(16).padStart(5, "0") + ".svg";
+  return kanji.codePointAt(0).toString(16).padStart(5, "0").toLowerCase() + ".svg";
 }
 
-async function getStrokeData(item) {
-  const filename = getKanjiSvgFileName(item.kanji);
+function getKanjiUnicodeCode(kanji) {
+  return `U+${kanji.codePointAt(0).toString(16).padStart(4, "0").toUpperCase()}`;
+}
 
-  if (strokeCache.has(filename)) {
+function getStrokeDisplayPath(filename) {
+  return `kanjivg/${filename}`;
+}
+
+async function getStrokeData(item, { forceReload = false } = {}) {
+  const filename = getKanjiSvgFileName(item.kanji);
+  const displayPath = getStrokeDisplayPath(filename);
+
+  if (forceReload) strokeCache.delete(filename);
+
+  if (!forceReload && strokeCache.has(filename)) {
     return strokeCache.get(filename);
   }
 
+  let fetchStatus = "取得不可（レスポンスなし）";
+
   try {
-    const response = await fetch(KANJIVG_BASE_URL + filename);
-    if (!response.ok) throw new Error(`KanjiVG SVG not found: ${filename}`);
+    const separator = KANJIVG_BASE_URL.includes("?") ? "&" : "?";
+    const svgUrl = `${KANJIVG_BASE_URL}${filename}${separator}v=${encodeURIComponent(APP_VERSION)}`;
+    const response = await fetch(svgUrl, { cache: "no-store" });
+    fetchStatus = `${response.status} ${response.statusText}`.trim();
+    if (!response.ok) throw new Error(`KanjiVG SVG request failed: ${fetchStatus}`);
 
     const svgText = await response.text();
     const parsed = parseKanjiVgSvg(svgText, item.kanji);
     if (parsed.paths.length === 0) throw new Error(`KanjiVG paths not found: ${filename}`);
 
-    strokeCache.set(filename, parsed);
-    return parsed;
-  } catch {
+    const result = {
+      ...parsed,
+      filename,
+      displayPath,
+      fetchStatus,
+      error: null,
+      usedFallback: false
+    };
+    strokeCache.set(filename, result);
+    return result;
+  } catch (error) {
+    const normalizedError = error instanceof Error ? error : new Error(String(error));
+    console.error("KanjiVG SVGの読み込みに失敗しました", {
+      kanji: item.kanji,
+      unicode: getKanjiUnicodeCode(item.kanji),
+      svgFile: filename,
+      fetchStatus,
+      error: normalizedError
+    });
+
     const fallback = getEmbeddedStrokeData(item);
-    strokeCache.set(filename, fallback);
-    return fallback;
+    const result = {
+      ...fallback,
+      filename,
+      displayPath,
+      fetchStatus,
+      error: normalizedError.message,
+      usedFallback: fallback.paths.length > 0
+    };
+    strokeCache.set(filename, result);
+    return result;
   }
+}
+
+function setStrokeLoadingState(item) {
+  const filename = getKanjiSvgFileName(item.kanji);
+  strokeStatus.textContent = "書き順データを読み込み中...";
+  strokeLoadInfo.classList.remove("error");
+  strokeLoadInfo.textContent = `読み込み対象：${getStrokeDisplayPath(filename)}`;
+}
+
+function showStrokeLoadResult(strokeData) {
+  strokeLoadInfo.classList.toggle("error", Boolean(strokeData.error));
+
+  if (!strokeData.error) {
+    strokeLoadInfo.textContent = `読み込み対象：${strokeData.displayPath}`;
+    return;
+  }
+
+  const fallbackText = strokeData.usedFallback
+    ? "SVGを読み込めなかったため、内蔵データで表示しています。"
+    : "書き順データを読み込めませんでした。";
+  strokeLoadInfo.textContent =
+    `${fallbackText} 読み込み対象：${strokeData.displayPath} ` +
+    `fetch：${strokeData.fetchStatus} エラー：${strokeData.error}`;
 }
 
 function parseKanjiVgSvg(svgText, kanji) {
   const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
   const svg = doc.querySelector("svg");
-  const code = kanji.codePointAt(0).toString(16).padStart(5, "0");
+  const code = kanji.codePointAt(0).toString(16).padStart(5, "0").toLowerCase();
   const pathsRoot = doc.getElementById(`kvg:StrokePaths_${code}`) || doc.querySelector("[id^='kvg:StrokePaths_']");
   const paths = pathsRoot
     ? [...pathsRoot.querySelectorAll("path")].map((path) => path.getAttribute("d")).filter(Boolean)
@@ -364,14 +442,37 @@ function makeSvgElement(name, attrs) {
   return node;
 }
 
-function animatePath(path) {
-  const length = path.getTotalLength();
-  path.style.strokeDasharray = length;
-  path.style.strokeDashoffset = length;
-  path.animate(
-    [{ strokeDashoffset: length }, { strokeDashoffset: 0 }],
-    { duration: 520, easing: "ease-out", fill: "forwards" }
-  );
+function animatePathSafely(path, index, item) {
+  try {
+    const length = path.getTotalLength();
+    path.style.strokeDasharray = length;
+    path.style.strokeDashoffset = length;
+    path.animate(
+      [{ strokeDashoffset: length }, { strokeDashoffset: 0 }],
+      { duration: 520, easing: "ease-out", fill: "forwards" }
+    );
+  } catch (error) {
+    console.warn("書き順pathのアニメーション初期化をスキップしました", {
+      kanji: item.kanji,
+      unicode: getKanjiUnicodeCode(item.kanji),
+      pathIndex: index,
+      error
+    });
+    path.remove();
+  }
+}
+
+function drawStrokeNumberSafely(path, number, opacity, item) {
+  try {
+    drawStrokeNumber(path, number, opacity);
+  } catch (error) {
+    console.warn("書き順pathの番号表示をスキップしました", {
+      kanji: item.kanji,
+      unicode: getKanjiUnicodeCode(item.kanji),
+      pathIndex: number - 1,
+      error
+    });
+  }
 }
 
 function drawStrokeNumber(path, number, opacity) {
@@ -493,6 +594,9 @@ document.addEventListener("click", (event) => {
   if (action === "weak") showScreen("weak");
   if (action === "history") showScreen("history");
   if (action === "play-strokes" || action === "replay-strokes") playStrokes();
+  if (action === "reload-strokes") {
+    drawStrokePreview(getKanji(state.currentKanjiId), { forceReload: true });
+  }
   if (action === "practice") openPractice();
   if (action === "learned") markLearned(state.currentKanjiId);
   if (action === "toggle-weak") toggleWeak(state.currentKanjiId);
