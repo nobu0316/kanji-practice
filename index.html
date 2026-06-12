@@ -64,6 +64,7 @@
                 <h2>書き順</h2>
                 <p id="strokeStatus">ボタンをおしてね</p>
               </div>
+              <div class="stroke-load-info" id="strokeLoadInfo" role="status" aria-live="polite"></div>
               <svg id="strokeSvg" viewBox="0 0 109 109" role="img" aria-label="書き順アニメーション"></svg>
               <p class="stroke-credit">書き順データ: KanjiVG</p>
             </div>
@@ -71,6 +72,7 @@
             <div class="detail-actions">
               <button class="big-button primary" type="button" data-action="play-strokes">書き順を見る</button>
               <button class="big-button" type="button" data-action="replay-strokes">もう一度</button>
+              <button class="big-button" type="button" data-action="reload-strokes">書き順を再読み込み</button>
               <button class="big-button success" type="button" data-action="practice">自分で書く</button>
               <button class="big-button success" type="button" data-action="learned">自分で書けた</button>
               <button class="big-button danger" type="button" data-action="toggle-weak" id="weakToggleButton">苦手に追加</button>
