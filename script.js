@@ -11,7 +11,6 @@ const state = {
   progress: loadProgress()
 };
 
-const KANJIVG_BASE_URL = "https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/";
 const PENDING_TEXT = "あとで追加";
 const strokeCache = new Map();
 
@@ -319,17 +318,28 @@ function getKanjiSvgFileName(kanji) {
   return kanji.codePointAt(0).toString(16).padStart(5, "0").toLowerCase() + ".svg";
 }
 
+function getKanjiSvgUrl(kanji) {
+  const fileName = getKanjiSvgFileName(kanji);
+  const url = new URL(`./kanjivg/${fileName}`, window.location.href);
+  url.searchParams.set("v", APP_VERSION);
+  return url.href;
+}
+
 function getKanjiUnicodeCode(kanji) {
   return `U+${kanji.codePointAt(0).toString(16).padStart(4, "0").toUpperCase()}`;
 }
 
-function getStrokeDisplayPath(filename) {
-  return `kanjivg/${filename}`;
+function isSvgContentType(contentType) {
+  const mediaType = contentType.split(";", 1)[0].trim().toLowerCase();
+  return mediaType === "image/svg+xml" ||
+    mediaType === "text/xml" ||
+    mediaType === "application/xml" ||
+    mediaType.endsWith("+xml");
 }
 
 async function getStrokeData(item, { forceReload = false } = {}) {
   const filename = getKanjiSvgFileName(item.kanji);
-  const displayPath = getStrokeDisplayPath(filename);
+  const svgUrl = getKanjiSvgUrl(item.kanji);
 
   if (forceReload) strokeCache.delete(filename);
 
@@ -337,24 +347,44 @@ async function getStrokeData(item, { forceReload = false } = {}) {
     return strokeCache.get(filename);
   }
 
-  let fetchStatus = "取得不可（レスポンスなし）";
+  const diagnostics = {
+    kanji: item.kanji,
+    unicode: getKanjiUnicodeCode(item.kanji),
+    svgFile: filename,
+    fetchUrl: svgUrl,
+    responseStatus: "取得不可（レスポンスなし）",
+    responseOk: false,
+    responseUrl: "",
+    contentType: "",
+    textPreview: ""
+  };
 
   try {
-    const separator = KANJIVG_BASE_URL.includes("?") ? "&" : "?";
-    const svgUrl = `${KANJIVG_BASE_URL}${filename}${separator}v=${encodeURIComponent(APP_VERSION)}`;
     const response = await fetch(svgUrl, { cache: "no-store" });
-    fetchStatus = `${response.status} ${response.statusText}`.trim();
-    if (!response.ok) throw new Error(`KanjiVG SVG request failed: ${fetchStatus}`);
-
+    const contentType = response.headers.get("content-type") || "";
+    diagnostics.responseStatus = `${response.status} ${response.statusText}`.trim();
+    diagnostics.responseOk = response.ok;
+    diagnostics.responseUrl = response.url;
+    diagnostics.contentType = contentType;
     const svgText = await response.text();
+    diagnostics.textPreview = svgText.slice(0, 100);
+
+    if (!response.ok) {
+      throw new Error(`HTTPエラー: ${diagnostics.responseStatus}`);
+    }
+    if (!isSvgContentType(contentType)) {
+      throw new Error(`SVGではないcontent-typeです: ${contentType || "未設定"}`);
+    }
+    if (!/<svg(?:\s|>)/i.test(svgText)) {
+      throw new Error("取得内容に<svgが含まれていません");
+    }
+
     const parsed = parseKanjiVgSvg(svgText, item.kanji);
     if (parsed.paths.length === 0) throw new Error(`KanjiVG paths not found: ${filename}`);
 
     const result = {
       ...parsed,
-      filename,
-      displayPath,
-      fetchStatus,
+      diagnostics,
       error: null,
       usedFallback: false
     };
@@ -363,19 +393,14 @@ async function getStrokeData(item, { forceReload = false } = {}) {
   } catch (error) {
     const normalizedError = error instanceof Error ? error : new Error(String(error));
     console.error("KanjiVG SVGの読み込みに失敗しました", {
-      kanji: item.kanji,
-      unicode: getKanjiUnicodeCode(item.kanji),
-      svgFile: filename,
-      fetchStatus,
+      ...diagnostics,
       error: normalizedError
     });
 
     const fallback = getEmbeddedStrokeData(item);
     const result = {
       ...fallback,
-      filename,
-      displayPath,
-      fetchStatus,
+      diagnostics,
       error: normalizedError.message,
       usedFallback: fallback.paths.length > 0
     };
@@ -385,26 +410,62 @@ async function getStrokeData(item, { forceReload = false } = {}) {
 }
 
 function setStrokeLoadingState(item) {
-  const filename = getKanjiSvgFileName(item.kanji);
   strokeStatus.textContent = "書き順データを読み込み中...";
   strokeLoadInfo.classList.remove("error");
-  strokeLoadInfo.textContent = `読み込み対象：${getStrokeDisplayPath(filename)}`;
+  strokeLoadInfo.replaceChildren();
 }
 
 function showStrokeLoadResult(strokeData) {
   strokeLoadInfo.classList.toggle("error", Boolean(strokeData.error));
+  strokeLoadInfo.replaceChildren();
 
   if (!strokeData.error) {
-    strokeLoadInfo.textContent = `読み込み対象：${strokeData.displayPath}`;
     return;
   }
 
-  const fallbackText = strokeData.usedFallback
-    ? "SVGを読み込めなかったため、内蔵データで表示しています。"
-    : "書き順データを読み込めませんでした。";
-  strokeLoadInfo.textContent =
-    `${fallbackText} 読み込み対象：${strokeData.displayPath} ` +
-    `fetch：${strokeData.fetchStatus} エラー：${strokeData.error}`;
+  const message = document.createElement("p");
+  message.className = "stroke-load-message";
+  message.textContent = strokeData.usedFallback
+    ? "書き順SVGを読み込めませんでした。現在は内蔵データで表示しています。"
+    : "書き順SVGを読み込めませんでした。";
+
+  const details = document.createElement("details");
+  details.className = "stroke-load-details";
+  const summary = document.createElement("summary");
+  summary.textContent = "詳細";
+  const list = document.createElement("dl");
+  const diagnostics = strokeData.diagnostics;
+
+  appendStrokeDiagnostic(list, "対象漢字", diagnostics.kanji);
+  appendStrokeDiagnosticLink(list, "読み込みURL", diagnostics.fetchUrl);
+  appendStrokeDiagnostic(list, "HTTPステータス", diagnostics.responseStatus);
+  appendStrokeDiagnostic(list, "response.url", diagnostics.responseUrl || "取得できませんでした");
+  appendStrokeDiagnostic(list, "content-type", diagnostics.contentType || "取得できませんでした");
+  appendStrokeDiagnostic(list, "エラー", strokeData.error);
+
+  details.append(summary, list);
+  strokeLoadInfo.append(message, details);
+}
+
+function appendStrokeDiagnostic(list, label, value) {
+  const term = document.createElement("dt");
+  const description = document.createElement("dd");
+  term.textContent = label;
+  description.textContent = value;
+  list.append(term, description);
+}
+
+function appendStrokeDiagnosticLink(list, label, url) {
+  const term = document.createElement("dt");
+  const description = document.createElement("dd");
+  const link = document.createElement("a");
+  term.textContent = label;
+  link.href = url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = url;
+  description.appendChild(link);
+  list.append(term, description);
 }
 
 function parseKanjiVgSvg(svgText, kanji) {
