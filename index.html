@@ -1,166 +1,104 @@
-const GRADE2_KANJI = "引 羽 雲 園 遠 何 科 夏 家 歌 画 回 会 海 絵 外 角 楽 活 間 丸 岩 顔 汽 記 帰 弓 牛 魚 京 強 教 近 兄 形 計 元 言 原 戸 古 午 後 語 工 公 広 交 光 考 行 高 黄 合 谷 国 黒 今 才 細 作 算 止 市 矢 姉 思 紙 寺 自 時 室 社 弱 首 秋 週 春 書 少 場 色 食 心 新 親 図 数 西 声 星 晴 切 雪 船 線 前 組 走 多 太 体 台 地 池 知 茶 昼 長 鳥 朝 直 通 弟 店 点 電 刀 冬 当 東 答 頭 同 道 読 内 南 肉 馬 売 買 麦 半 番 父 風 分 聞 米 歩 母 方 北 毎 妹 万 明 鳴 毛 門 夜 野 友 用 曜 来 里 理 話".split(" ");
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>かきじゅんれんしゅう</title>
+    <link rel="stylesheet" href="./style.css?v=20260613">
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <button class="icon-button hidden" id="backButton" type="button" aria-label="もどる">←</button>
+        <div>
+          <p class="app-subtitle">小学2年生</p>
+          <h1 id="screenTitle">かきじゅん</h1>
+        </div>
+      </header>
 
-const KANJI_OVERRIDES = {
-  引: {
-    onyomi: ["イン"],
-    kunyomi: ["ひ-く"],
-    words: ["引く", "引き出し", "引力"],
-    exampleSentence: "ドアを引く。"
-  },
-  羽: {
-    onyomi: ["ウ"],
-    kunyomi: ["は", "はね"],
-    words: ["羽", "羽根", "羽毛"],
-    exampleSentence: "鳥の羽を見る。"
-  },
-  雲: {
-    onyomi: ["ウン"],
-    kunyomi: ["くも"],
-    words: ["雲", "白雲", "雨雲"],
-    exampleSentence: "空に白い雲がある。"
-  },
-  園: {
-    onyomi: ["エン"],
-    kunyomi: [],
-    words: ["園", "公園", "学園"],
-    exampleSentence: "公園で遊ぶ。"
-  },
-  遠: {
-    onyomi: ["エン"],
-    kunyomi: ["とお-い"],
-    words: ["遠い", "遠足", "遠方"],
-    exampleSentence: "学校までは遠い。"
-  },
-  何: {
-    onyomi: ["カ"],
-    kunyomi: ["なに", "なん"],
-    words: ["何", "何人", "何日"],
-    exampleSentence: "これは何ですか。"
-  },
-  科: {
-    onyomi: ["カ"],
-    kunyomi: [],
-    words: ["理科", "教科", "科学"],
-    exampleSentence: "理科の時間に実験をする。"
-  },
-  春: {
-    onyomi: ["シュン"],
-    kunyomi: ["はる"],
-    words: ["春", "春休み", "青春"],
-    exampleSentence: "春になると花がさく。",
-    kanjiVg: {
-      source: "KanjiVG",
-      viewBox: "0 0 109 109",
-      paths: [
-        "M28.31,25.18c1.46,0.37,4.15,0.5,5.61,0.37c12.83-1.18,22.33-2.3,36.29-3.51c2.43-0.21,4.29-0.04,6.12,0.36",
-        "M28.5,38.67c1.54,0.38,4.11,0.3,5.65,0.13c11.6-1.3,22.23-2.92,35.13-4.38c2.7-0.31,4.72-0.16,5.88,0.12",
-        "M15.38,53.48c3.09,1.06,6.46,0.72,9.62,0.27c20.13-2.87,36.38-5.75,54.15-7.79c3.03-0.35,5.97-0.37,8.98,0.11",
-        "M52.75,11.25c1,1.5,1.02,3.53,0.54,5.9C50.12,32.62,39.5,68,12.5,80.75",
-        "M53.25,41.25c2.29,0.15,29.6,28.08,35.99,32.9c2.21,1.67,5.05,2.38,7.26,2.85",
-        "M37.77,64.94c0.83,0.83,1.28,1.93,1.28,2.97c0,0.87-0.18,22.16-0.24,29.84c-0.01,1.59-0.02,2.59-0.02,2.68",
-        "M39.76,67.17c6.94-0.86,24.26-3.55,25.85-3.68c1.67-0.13,3.11,1.38,3.11,2.72c0,1.26-0.16,20.65-0.24,29.04c-0.02,2.16-0.03,3.57-0.03,3.73",
-        "M40.08,80.98c4.54-0.35,23.04-1.98,27.22-2.31",
-        "M40.08,96.98c4.29-0.23,22.79-1.73,27.47-1.81"
-      ]
-    }
-  },
-  知: {
-    onyomi: ["チ"],
-    kunyomi: ["し-る"],
-    words: ["知る", "知人", "知恵"],
-    exampleSentence: "あたらしいことを知る。",
-    kanjiVg: {
-      source: "KanjiVG",
-      viewBox: "0 0 109 109",
-      paths: [
-        "M30.39,16.21c0.61,1.29,0.5,2.73,0.07,4.09C28.5,26.5,25,35.25,18.01,44.16",
-        "M28.91,33.73c1.79,0,2.19,0.14,3.08,0c4.13-0.63,8.18-1.52,14.78-2.89c1.91-0.39,3.86-0.47,5.48-0.1",
-        "M12.22,57.18c2.49,0.51,4.9,0.46,7.41,0.15c7.62-0.95,19.62-2.58,29.51-3.78c1.72-0.21,3.85-0.05,5.35,0.26",
-        "M37.98,36c0.4,1.32,0.59,2.61,0.58,4.24c-0.18,25.01-8.68,42.88-24.75,51.93",
-        "M39.25,65.75c6,4.25,11.62,10.88,14.25,16.75",
-        "M59,44.94c0.97,0.97,1.74,1.85,2.09,3.35c1.19,4.97,2.18,15.35,3.25,24.19c0.16,1.32,0.31,2.58,0.45,3.77",
-        "M61.73,46.38c8.56-1.22,21.16-2.76,27.52-3.48c2.02-0.23,4.12,0.97,3.69,3.33c-0.86,4.66-3.05,17.02-4.36,23.59",
-        "M65,73.56c6.55-0.93,14.12-1.62,22.04-2.45c1.14-0.12,2.29-0.24,3.46-0.37"
-      ]
-    }
-  },
-  家: {
-    onyomi: ["カ", "ケ"],
-    kunyomi: ["いえ", "や"],
-    words: ["家", "家族", "家来"],
-    exampleSentence: "家に帰る。"
-  },
-  歌: {
-    onyomi: ["カ"],
-    kunyomi: ["うた", "うた-う"],
-    words: ["歌", "歌う", "校歌"],
-    exampleSentence: "みんなで歌を歌う。"
-  },
-  会: {
-    onyomi: ["カイ", "エ"],
-    kunyomi: ["あ-う"],
-    words: ["会う", "会社", "会話"],
-    exampleSentence: "友だちに会う。"
-  },
-  海: {
-    onyomi: ["カイ"],
-    kunyomi: ["うみ"],
-    words: ["海", "海外", "海水"],
-    exampleSentence: "夏に海へ行く。"
-  },
-  絵: {
-    onyomi: ["カイ", "エ"],
-    kunyomi: [],
-    words: ["絵", "絵本", "絵画"],
-    exampleSentence: "絵をかく。"
-  },
-  外: {
-    onyomi: ["ガイ", "ゲ"],
-    kunyomi: ["そと", "ほか", "はず-す"],
-    words: ["外", "外国", "外す"],
-    exampleSentence: "外で遊ぶ。"
-  },
-  楽: {
-    onyomi: ["ガク", "ラク"],
-    kunyomi: ["たの-しい", "たの-しむ"],
-    words: ["楽しい", "音楽", "楽器"],
-    exampleSentence: "音楽の時間が楽しい。"
-  },
-  間: {
-    onyomi: ["カン", "ケン"],
-    kunyomi: ["あいだ", "ま"],
-    words: ["間", "時間", "人間"],
-    exampleSentence: "少しの間、待つ。"
-  },
-  夏: {
-    onyomi: ["カ", "ゲ"],
-    kunyomi: ["なつ"],
-    words: ["夏", "夏休み", "初夏"],
-    exampleSentence: "夏休みに海へ行く。"
-  },
-  魚: {
-    onyomi: ["ギョ"],
-    kunyomi: ["さかな", "うお"],
-    words: ["魚", "金魚", "魚市場"],
-    exampleSentence: "川で魚を見る。"
-  },
-  書: {
-    onyomi: ["ショ"],
-    kunyomi: ["か-く"],
-    words: ["書く", "読書", "図書"],
-    exampleSentence: "ノートに字を書く。"
-  }
-};
+      <main>
+        <section class="screen active" id="homeScreen" aria-labelledby="screenTitle">
+          <div class="home-kanji" id="homeKanji">字</div>
+          <div class="home-actions">
+            <button class="big-button primary" type="button" data-action="today">今日の漢字</button>
+            <button class="big-button" type="button" data-action="list">漢字一覧</button>
+            <button class="big-button" type="button" data-action="weak">苦手な漢字</button>
+            <button class="big-button" type="button" data-action="history">学習履歴</button>
+          </div>
+        </section>
 
-const KANJI_DATA = GRADE2_KANJI.map((kanji) => ({
-  id: `g2-${kanji.codePointAt(0).toString(16).padStart(5, "0")}`,
-  kanji,
-  grade: 2,
-  onyomi: [],
-  kunyomi: [],
-  words: [],
-  exampleSentence: "",
-  learnedCount: 0,
-  lastStudiedAt: "",
-  ...KANJI_OVERRIDES[kanji]
-}));
+        <section class="screen" id="listScreen">
+          <div class="kanji-grid" id="kanjiGrid"></div>
+        </section>
+
+        <section class="screen" id="weakScreen">
+          <div class="kanji-grid" id="weakGrid"></div>
+          <p class="empty-text hidden" id="weakEmpty">まだ苦手な漢字はありません。</p>
+        </section>
+
+        <section class="screen" id="historyScreen">
+          <div class="history-list" id="historyList"></div>
+          <p class="empty-text hidden" id="historyEmpty">まだ学習履歴はありません。</p>
+        </section>
+
+        <section class="screen" id="detailScreen">
+          <article class="detail">
+            <div class="detail-kanji" id="detailKanji"></div>
+            <div class="reading-box">
+              <p><span>音読み</span><strong id="detailOnyomi"></strong></p>
+              <p><span>訓読み</span><strong id="detailKunyomi"></strong></p>
+            </div>
+
+            <div class="info-block">
+              <h2>ことば</h2>
+              <div class="word-list" id="detailWords"></div>
+            </div>
+
+            <div class="info-block">
+              <h2>れいぶん</h2>
+              <p class="sentence" id="detailSentence"></p>
+            </div>
+
+            <div class="stroke-area">
+              <div class="stroke-header">
+                <h2>書き順</h2>
+                <p id="strokeStatus">ボタンをおしてね</p>
+              </div>
+              <div class="stroke-load-info" id="strokeLoadInfo" role="status" aria-live="polite"></div>
+              <svg id="strokeSvg" viewBox="0 0 109 109" role="img" aria-label="書き順アニメーション"></svg>
+              <p class="stroke-credit">書き順データ: KanjiVG</p>
+            </div>
+
+            <div class="detail-actions">
+              <button class="big-button primary" type="button" data-action="play-strokes">書き順を見る</button>
+              <button class="big-button" type="button" data-action="replay-strokes">もう一度</button>
+              <button class="big-button" type="button" data-action="reload-strokes">書き順を再読み込み</button>
+              <button class="big-button success" type="button" data-action="practice">自分で書く</button>
+              <button class="big-button success" type="button" data-action="learned">自分で書けた</button>
+              <button class="big-button danger" type="button" data-action="toggle-weak" id="weakToggleButton">苦手に追加</button>
+            </div>
+          </article>
+        </section>
+
+        <section class="screen" id="practiceScreen">
+          <div class="practice-wrap">
+            <div class="practice-guide" id="practiceGuide">字</div>
+            <canvas id="practiceCanvas" width="320" height="320" aria-label="なぞり練習"></canvas>
+          </div>
+          <div class="detail-actions">
+            <button class="big-button danger" type="button" data-action="clear-canvas">消す</button>
+            <button class="big-button success" type="button" data-action="practice-done">できた</button>
+            <button class="big-button" type="button" data-action="back-detail">戻る</button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <a href="https://kanjivg.tagaini.net/" target="_blank" rel="noopener noreferrer">漢字書き順データ：KanjiVG / CC BY-SA 3.0</a>
+      </footer>
+    </div>
+
+    <script src="./kanji-data.js?v=20260613"></script>
+    <script src="./script.js?v=20260613"></script>
+  </body>
+</html>
