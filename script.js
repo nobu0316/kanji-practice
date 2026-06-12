@@ -1,5 +1,5 @@
 const STORAGE_KEY = "kakiJunGrade2Progress";
-const APP_VERSION = "2026-06-13-01";
+const APP_VERSION = "2026-06-13-02";
 
 const state = {
   currentScreen: "home",
@@ -379,7 +379,8 @@ async function getStrokeData(item, { forceReload = false } = {}) {
       throw new Error("取得内容に<svgが含まれていません");
     }
 
-    const parsed = parseKanjiVgSvg(svgText, item.kanji);
+    const normalizedSvgText = normalizeSvgText(svgText);
+    const parsed = parseKanjiVgSvg(normalizedSvgText, item.kanji);
     if (parsed.paths.length === 0) throw new Error(`KanjiVG paths not found: ${filename}`);
 
     const result = {
@@ -468,8 +469,27 @@ function appendStrokeDiagnosticLink(list, label, url) {
   list.append(term, description);
 }
 
+function normalizeSvgText(svgText) {
+  const text = svgText.trim();
+  const svgRoot = text.match(/<svg\b[^>]*>/i)?.[0] || "";
+
+  if (text.includes("kvg:") && !/\bxmlns:kvg\s*=/.test(svgRoot)) {
+    return text.replace(
+      /<svg\b/i,
+      '<svg xmlns:kvg="http://kanjivg.tagaini.net"'
+    );
+  }
+
+  return text;
+}
+
 function parseKanjiVgSvg(svgText, kanji) {
   const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+  const parserError = doc.querySelector("parsererror");
+  if (parserError) {
+    throw new Error(`SVG XML parse error: ${parserError.textContent.trim().slice(0, 160)}`);
+  }
+
   const svg = doc.querySelector("svg");
   const code = kanji.codePointAt(0).toString(16).padStart(5, "0").toLowerCase();
   const pathsRoot = doc.getElementById(`kvg:StrokePaths_${code}`) || doc.querySelector("[id^='kvg:StrokePaths_']");
