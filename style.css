@@ -303,6 +303,24 @@ h2 {
   font-weight: 800;
 }
 
+.stroke-load-info {
+  margin: 0 0 10px;
+  border-radius: 6px;
+  background: #eef5f1;
+  color: var(--muted);
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.stroke-load-info.error {
+  border: 2px solid #d95757;
+  background: #fff0f0;
+  color: #8d2020;
+  font-weight: 800;
+}
+
 #strokeSvg {
   display: block;
   width: 100%;
